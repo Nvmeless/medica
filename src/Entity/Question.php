@@ -8,7 +8,7 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Annotation\Groups;
-
+use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\Entity(repositoryClass: QuestionRepository::class)]
 class Question
 {
@@ -20,7 +20,12 @@ class Question
 
     #[ORM\Column(type: Types::TEXT)]
     #[Groups(["getAllQuestion"])]
-
+    #[Assert\Length(        
+            min: 2,
+            max: 50,
+            minMessage: 'Votre question fait {{ value }} et doit faire au moins {{ limit }} caractères de long',
+            maxMessage: 'Votre question ne peut faire plus de {{ limit }} caractères de long',
+    )]
     private ?string $statement = null;
 
     #[Groups(["getAllQuestion"])]
@@ -58,7 +63,6 @@ class Question
     public function setStatement(string $statement): static
     {
         $this->statement = $statement;
-
         return $this;
     }
 
