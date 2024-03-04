@@ -2,26 +2,58 @@
 
 namespace App\DataFixtures;
 
+use Faker\Factory;
+use App\Entity\User;
+use Faker\Generator;
 use App\Entity\Answer;
 use App\Entity\Question;
-use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Persistence\ObjectManager;
-use Faker\Factory;
-use Faker\Generator;
+use Doctrine\Bundle\FixturesBundle\Fixture;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+
 class AppFixtures extends Fixture
 {
     /**
      * @var Generator
      */
     private Generator $faker;
-    
-    public function __construct(){
+    /**
+     * Password Hasher
+     *
+     * @var UserPasswordHasherInterface
+     */
+    private UserPasswordHasherInterface $userPasswordHasher;
+    public function __construct(UserPasswordHasherInterface $userPasswordHasher){
         $this->faker= Factory::create("fr_FR");
+        $this->userPasswordHasher = $userPasswordHasher;
     }
     
     public function load(ObjectManager $manager): void
     {
+        //Public
+        $publicUser = new User();
+        $password = $this->faker->password(2,6);
+        $publicUser
+            ->setUsername($this->faker->userName() . "@" . $password)
+            ->setPassword($this->userPasswordHasher->hashPassword($publicUser, $password))
+            ->setRoles(["ROLE_PUBLIC"]);
+        $manager->persist($publicUser);
 
+        for ($i=0; $i < 10; $i++) { 
+            $userUser = new User();
+            $password = $this->faker->password(2,6);
+            $userUser
+                ->setUsername($this->faker->userName() . "@" . $password)
+                ->setPassword($this->userPasswordHasher->hashPassword($userUser, $password))
+                ->setRoles(["ROLE_USER"]);
+            $manager->persist($userUser);
+        }
+            $adminUser = new User();
+            $adminUser
+                ->setUsername("admin")
+                ->setPassword($this->userPasswordHasher->hashPassword($adminUser, "password"))
+                ->setRoles(["ROLE_ADMIN"]);
+            $manager->persist($adminUser);
         
         $questions= [];
          for ($i=0; $i < 10 ; $i++) { 
@@ -35,7 +67,7 @@ class AppFixtures extends Fixture
         }
         for($i=0; $i < 20; $i++ ){
             $answer = new Answer( );
-            $selectedQuestion = $questions[array_rand( $questions, 1)];
+            $selectedQuestion = $questions[array_rand($questions, 1)];
             $answer->setContent("Oui, ça vaut mieux de ouf")->setQuestion($selectedQuestion);
             $manager->persist($answer);
         }
